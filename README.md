@@ -1,0 +1,1 @@
+Proof of Concept uruchomienie symulacji jazdy w [HighwayEnv](https://highway-env.farama.org/) + zrozumienie podstawowej pętli RL (observation, action, reward, episode, policy).
