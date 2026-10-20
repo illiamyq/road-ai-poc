@@ -1,7 +1,7 @@
 ''' example from https://github.com/Farama-Foundation/HighwayEnv Usage, with custom ruleset in rules.py'''
 import sys
 import gymnasium as gym
-from rules import make_env
+from src.rules import make_env
 
 ruleset = sys.argv[1] if len(sys.argv) > 1 else "basic"
 
