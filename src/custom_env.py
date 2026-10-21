@@ -3,6 +3,7 @@ import gymnasium as gym
 from highway_env import utils
 from highway_env.envs.common.abstract import AbstractEnv
 from highway_env.road.road import Road, RoadNetwork
+from highway_env.vehicle.kinematics import Vehicle
 
 ''' https://highway-env.farama.org/make_your_own/ '''
 
@@ -15,6 +16,10 @@ class StraightRoadEnv(AbstractEnv):
             "action": {"type": "DiscreteMetaAction"},
             "lanes_count": 3,
             "road_length": 10000,
+            "vehicles_count": 20,
+            "vehicles_density": 1,
+            "ego_spacing": 2,
+            "other_vehicles_type": "highway_env.vehicle.behavior.IDMVehicle",
             "duration": 300,
             "collision_reward": -1,
             "high_speed_reward": 0.5,
@@ -36,13 +41,23 @@ class StraightRoadEnv(AbstractEnv):
         )
 
     def _make_vehicles(self):
-        lane = self.road.network.get_lane(("0", "1", 1))
-        vehicle = self.action_type.vehicle_class(
-            self.road, lane.position(0.0, 0.0), heading=lane.heading_at(0.0), speed=25.0
+        ego = Vehicle.create_random(
+            self.road, speed=25.0, lane_id=1, spacing=self.config["ego_spacing"]
         )
-        self.vehicle = vehicle
-        self.controlled_vehicles = [vehicle]
-        self.road.vehicles.append(vehicle)
+        ego = self.action_type.vehicle_class(
+        self.road, ego.position, heading=ego.heading, speed=ego.speed
+        )
+        self.vehicle = ego
+        self.controlled_vehicles = [ego]
+        self.road.vehicles.append(ego)
+
+        other_type = utils.class_from_path(self.config["other_vehicles_type"])
+        for _ in range(self.config["vehicles_count"]):
+            vehicle = other_type.create_random(
+                self.road, spacing=1 / self.config["vehicles_density"]
+            )
+            vehicle.randomize_behavior()
+            self.road.vehicles.append(vehicle)
 
     def _reward(self, action):
         speed = self.vehicle.speed * np.cos(self.vehicle.heading)

@@ -35,7 +35,7 @@ class RuleWrapper(gym.Wrapper):
         return obs, reward, terminated, truncated, info
 
 
-def make_env(ruleset="none", **kwargs):
-    env = gym.make("highway-v0", **kwargs)
+def make_env(ruleset="none", env_id="highway-v0", **kwargs):
+    env = gym.make(env_id, **kwargs)
     params = RULESETS[ruleset]
     return env if params is None else RuleWrapper(env, **params)
