@@ -21,7 +21,9 @@ class RuleWrapper(gym.Wrapper):
         ego = base.vehicle
         front, _ = base.road.neighbour_vehicles(ego)
         needs_pass = front is not None and front.speed < ego.speed and front.position[0] - ego.position[0] < 50
-        bad_pass = action == self.left and not needs_pass
+        lanes = base.config.get("lanes_count", 99)
+        on_ramp = getattr(ego.lane, "forbidden", False) or ego.lane_index[2] >= lanes
+        bad_pass = action == self.left and not needs_pass and not on_ramp
 
         obs, reward, terminated, truncated, info = self.env.step(action)
 
