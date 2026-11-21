@@ -1,3 +1,4 @@
+import argparse
 import os
 import gymnasium as gym
 import highway_env
@@ -7,23 +8,39 @@ from rules import make_env
 
 gym.register_envs(highway_env)
 
-RULESET = "basic"
-POLICY = "baseline"
-MODE = "gif"
-GIF_MODE = "combined"
-GIF_EPISODES = 10
-FPS = 30
-FRAME_SKIP = 5
-PAUSE = 2
-SEED = 555
-EPISODES = 10
-OUT_DIR = "outputs"
+parser = argparse.ArgumentParser()
+parser.add_argument("--ruleset", default="basic")
+parser.add_argument("--policy", default="baseline", choices=["baseline", "random"])
+parser.add_argument("--mode", default="gif", choices=["human", "gif", "none"])
+parser.add_argument("--gif-mode", default="combined", choices=["combined", "separate"])
+parser.add_argument("--gif-episodes", type=int, default=10)
+parser.add_argument("--fps", type=int, default=30)
+parser.add_argument("--frame-skip", type=int, default=5)
+parser.add_argument("--pause", type=int, default=2)
+parser.add_argument("--seed", type=int, default=555)
+parser.add_argument("--episodes", type=int, default=10)
+parser.add_argument("--out-dir", default="outputs")
+parser.add_argument("--vehicles", type=int, default=10)
+parser.add_argument("--ramp-vehicles", type=int, default=1)
+args = parser.parse_args()
+
+RULESET = args.ruleset
+POLICY = args.policy
+MODE = args.mode
+GIF_MODE = args.gif_mode
+GIF_EPISODES = args.gif_episodes
+FPS = args.fps
+FRAME_SKIP = args.frame_skip
+PAUSE = args.pause
+SEED = args.seed
+EPISODES = args.episodes
+OUT_DIR = args.out_dir
 TAG = f"{RULESET}_{POLICY}_seed{SEED}"
 
 env = make_env(
     RULESET,
     env_id="custom-v0",
-    config={"vehicles_count": 10, "ramp_vehicles": 1},
+    config={"vehicles_count": args.vehicles, "ramp_vehicles": args.ramp_vehicles},
     render_mode={"human": "human", "gif": "rgb_array", "none": None}[MODE],
 )
 base = env.unwrapped
@@ -86,6 +103,7 @@ if MODE == "gif":
     os.makedirs(OUT_DIR, exist_ok=True)
     base._automatic_rendering = capture
 
+counts = {}
 for episode in range(EPISODES):
     recording = MODE == "gif" and episode < GIF_EPISODES
     label = f"episode {episode}  seed {SEED + episode}"
@@ -106,6 +124,7 @@ for episode in range(EPISODES):
             violations[k] += int(v)
         done = terminated or truncated
     result = outcome(info)
+    counts[result] = counts.get(result, 0) + 1
     print(f"episode={episode} steps={steps} return={total:.2f} result={result} violations={violations}")
     if recording:
         add_pause(result)
@@ -116,4 +135,5 @@ for episode in range(EPISODES):
 if MODE == "gif" and GIF_MODE == "combined" and frames:
     save_gif(f"{OUT_DIR}/{TAG}_combined.gif")
 
+print(f"summary episodes={EPISODES} {counts}")
 env.close()
